@@ -1,0 +1,11 @@
+{
+    "name": "devin/algolia",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Devin Beeuwkes",
+            "email": "devinbeeuwkes7@gmail.com"
+        }
+    ],
+    "require": {}
+}
