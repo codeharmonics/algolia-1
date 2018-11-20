@@ -18,6 +18,16 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
         DomParser::forFile('pathtoinvalidfile.txt');
     }
 
+    public function test_it_throws_an_exception_on_non_existing_root_selector()
+    {
+        $this->expectException(\Devin\Algolia\Exceptions\InvalidRootSelectorException::class);
+
+        DomParser::forFile(__DIR__ . '/test.html')
+            ->setRootSelector('nonexsisting')
+            ->createIndices()
+            ->getIndices();
+    }
+
     public function test_it_parses_h1_tags_correctly()
     {
         $expected = [
@@ -25,6 +35,20 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
         ];
 
         $result = DomParser::forFile(__DIR__ . '/test.html', 'foo')->createIndices()->getIndices();
+
+        $this->assertArraySubset($expected, $result);
+    }
+
+    public function test_it_selects_right_document_root()
+    {
+        $expected = [
+            ['h1' => 'Install', 'importance' => 0],
+        ];
+
+        $result = DomParser::forFile(__DIR__ . '/test_different_root.html', 'foo')
+            ->setRootSelector('article#documentation')
+            ->createIndices()
+            ->getIndices();
 
         $this->assertArraySubset($expected, $result);
     }

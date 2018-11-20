@@ -1,15 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Devin\Algolia;
 
 use Devin\Algolia\Concerns\TraversesDom;
 use Devin\Algolia\Contracts\ConvertsItemToAngoliaIndex;
 use Devin\Algolia\Exceptions\InvalidPathException;
+use Devin\Algolia\Exceptions\UnindexableException;
 use Symfony\Component\DomCrawler\Crawler;
 
 class DomParser
 {
     use TraversesDom;
+
+    /**
+     * Determine whether the indices have been created.
+     *
+     * @var bool
+     */
+    protected $indicesCreated = false;
 
     /**
      * The index objects that are suitable for use in Algolia.
@@ -91,10 +101,16 @@ class DomParser
     public function createIndices() : self
     {
         $this->traverseDom(function (\DOMElement $element) {
-            $this->addIndexableObject(
-                $this->extractIndexableObject($element)
-            );
+            try {
+                $this->addIndexableObject(
+                    $this->extractIndexableObject($element)
+                );
+            } catch (UnindexableException $exception) {
+                // Don't index this element.
+            }
         });
+
+        $this->indicesCreated = true;
 
         return $this;
     }
@@ -105,11 +121,12 @@ class DomParser
      * @param \DOMElement $element
      *
      * @return array
+     * @throws \Devin\Algolia\Exceptions\UnindexableException
      */
     protected function extractIndexableObject(\DOMElement $element) : array
     {
         if (! $this->shouldBeIndexed($element)) {
-            return [];
+            throw new UnindexableException(sprintf('Element %s is not indexable', $element->tagName));
         }
 
         $this->addToParentsArrayIfNeeded($element);
@@ -336,9 +353,7 @@ class DomParser
      */
     protected function addIndexableObject(array $object)
     {
-        if (! empty($object)) {
-            $this->indices[] = $object;
-        }
+        $this->indices[] = $object;
     }
 
     /**
@@ -348,6 +363,10 @@ class DomParser
      */
     public function getIndices() : array
     {
+        if (! $this->indicesCreated) {
+            $this->createIndices();
+        }
+
         return $this->indices;
     }
 }

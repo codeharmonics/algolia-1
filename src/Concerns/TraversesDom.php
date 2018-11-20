@@ -1,9 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Devin\Algolia\Concerns;
+
+use Devin\Algolia\Exceptions\InvalidRootSelectorException;
 
 trait TraversesDom
 {
+    /**
+     * The css-selector of the root element. All the children will be looped over.
+     * Defaults to the sensible body tag.
+     *
+     * @var string
+     */
+    protected $rootSelector = 'body';
+
     /**
      * The symfony crawler used to traverse the dom.
      *
@@ -39,11 +51,17 @@ trait TraversesDom
      * Traverse the dom and execute the provided callback on all its members.
      *
      * @param callable $callback
+     *
+     * @throws \Devin\Algolia\Exceptions\InvalidRootSelectorException
      */
     protected function traverseDom(callable $callback)
     {
-        foreach ($this->getBodyChildrenElements() as $element) {
-            $callback($element);
+        try {
+            foreach ($this->getBodyChildrenElements() as $element) {
+                $callback($element);
+            }
+        } catch (\InvalidArgumentException $exception) {
+            throw new InvalidRootSelectorException($this->rootSelector, $exception);
         }
     }
 
@@ -54,6 +72,20 @@ trait TraversesDom
      */
     protected function getBodyChildrenElements() : \Symfony\Component\DomCrawler\Crawler
     {
-        return $this->getCrawler()->filter('body')->children();
+        return $this->getCrawler()->filter($this->rootSelector)->children();
+    }
+
+    /**
+     * Set the selector to determine the root of the html which should be parsed.
+     *
+     * @param string $root
+     *
+     * @return \Devin\Algolia\Concerns\TraversesDom
+     */
+    public function setRootSelector(string $root) : self
+    {
+        $this->rootSelector = $root;
+
+        return $this;
     }
 }
