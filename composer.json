@@ -7,5 +7,18 @@
             "email": "devinbeeuwkes7@gmail.com"
         }
     ],
-    "require": {}
+    "require": {
+        "php": ">=7.0",
+        "symfony/dom-crawler": "^3.4",
+        "algolia/algoliasearch-client-php": "^1.28",
+        "symfony/css-selector": "^3.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Devin\\Algolia\\": "src/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.5"
+    }
 }
