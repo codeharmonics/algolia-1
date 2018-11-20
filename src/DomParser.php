@@ -7,16 +7,16 @@ use Devin\Algolia\Contracts\ConvertsItemToAngoliaIndex;
 use Devin\Algolia\Exceptions\InvalidPathException;
 use Symfony\Component\DomCrawler\Crawler;
 
-class Parser
+class DomParser
 {
     use TraversesDom;
 
     /**
-     * The objects that are suitable for use in Algolia.
+     * The index objects that are suitable for use in Algolia.
      *
      * @var array
      */
-    protected $indexObjects = [];
+    protected $indices = [];
 
     /**
      * The stored parent objects to add when creating the searchable objects.
@@ -69,7 +69,7 @@ class Parser
      * @param string $path
      * @param string $baseUri
      *
-     * @return \Devin\Algolia\Parser
+     * @return \Devin\Algolia\DomParser
      * @throws \Devin\Algolia\Exceptions\InvalidPathException
      */
     public static function forFile(string $path, string $baseUri = '') : self
@@ -86,15 +86,15 @@ class Parser
     /**
      * Parse the DOM contents to indexable objects, ready for use with Algolia Search.
      *
-     * @return \Devin\Algolia\Parser
+     * @return \Devin\Algolia\DomParser
      */
-    public function parse() : self
+    public function createIndices() : self
     {
-        foreach ($this->getBodyChildrenElements() as $element) {
+        $this->traverseDom(function (\DOMElement $element) {
             $this->addIndexableObject(
                 $this->extractIndexableObject($element)
             );
-        }
+        });
 
         return $this;
     }
@@ -149,7 +149,7 @@ class Parser
      *
      * @param \DOMElement $element
      *
-     * @return \Devin\Algolia\Parser
+     * @return \Devin\Algolia\DomParser
      */
     protected function rebaseParentsIfNeeded(\DOMElement $element) : self
     {
@@ -337,18 +337,8 @@ class Parser
     protected function addIndexableObject(array $object)
     {
         if (! empty($object)) {
-            $this->indexObjects[] = $object;
+            $this->indices[] = $object;
         }
-    }
-
-    /**
-     * Retrieve all the dom nodes withing the body tag of the provided document.
-     *
-     * @return \Symfony\Component\DomCrawler\Crawler
-     */
-    protected function getBodyChildrenElements() : Crawler
-    {
-        return $this->getCrawler()->filter('body')->children();
     }
 
     /**
@@ -356,8 +346,8 @@ class Parser
      *
      * @return array
      */
-    public function getIndexableObjects() : array
+    public function getIndices() : array
     {
-        return $this->indexObjects;
+        return $this->indices;
     }
 }

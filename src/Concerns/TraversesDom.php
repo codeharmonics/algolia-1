@@ -34,4 +34,26 @@ trait TraversesDom
     {
         return $this->crawler;
     }
+
+    /**
+     * Traverse the dom and execute the provided callback on all its members.
+     *
+     * @param callable $callback
+     */
+    protected function traverseDom(callable $callback)
+    {
+        foreach ($this->getBodyChildrenElements() as $element) {
+            $callback($element);
+        }
+    }
+
+    /**
+     * Retrieve all the dom nodes withing the body tag of the provided document.
+     *
+     * @return \Symfony\Component\DomCrawler\Crawler
+     */
+    protected function getBodyChildrenElements() : \Symfony\Component\DomCrawler\Crawler
+    {
+        return $this->getCrawler()->filter('body')->children();
+    }
 }

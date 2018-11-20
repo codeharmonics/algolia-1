@@ -1,21 +1,21 @@
 <?php
 
-use Devin\Algolia\Parser;
+use Devin\Algolia\DomParser;
 
 class DomParserTest extends \PHPUnit\Framework\TestCase
 {
     public function test_it_creates_an_instance()
     {
-        $parser = Parser::forFile(__DIR__ . '/test.html');
+        $parser = DomParser::forFile(__DIR__ . '/test.html');
 
-        $this->assertInstanceOf(Parser::class, $parser);
+        $this->assertInstanceOf(DomParser::class, $parser);
     }
 
     public function test_it_throws_an_exception_for_invalid_path()
     {
         $this->expectException(\Devin\Algolia\Exceptions\InvalidPathException::class);
 
-        Parser::forFile('pathtoinvalidfile.txt');
+        DomParser::forFile('pathtoinvalidfile.txt');
     }
 
     public function test_it_parses_h1_tags_correctly()
@@ -24,7 +24,7 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
             ['h1' => 'Install', 'importance' => 0],
         ];
 
-        $result = Parser::forFile(__DIR__ . '/test.html', 'foo')->parse()->getIndexableObjects();
+        $result = DomParser::forFile(__DIR__ . '/test.html', 'foo')->createIndices()->getIndices();
 
         $this->assertArraySubset($expected, $result);
     }
@@ -36,7 +36,7 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
             ['h1' => 'Install', 'h2' => 'Install the algolia/scout package', 'link' => 'foo#Install_the_algoliascout_package_2', 'importance' => 1],
         ];
 
-        $result = Parser::forFile(__DIR__ . '/test.html', 'foo')->parse()->getIndexableObjects();
+        $result = DomParser::forFile(__DIR__ . '/test.html', 'foo')->createIndices()->getIndices();
 
         $this->assertArraySubset($expected, $result);
     }
@@ -49,7 +49,7 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
             ['h1' => 'Install', 'h2' => 'Install the algolia/scout package', 'link' => 'foo#Install_the_algoliascout_package_2', 'importance' => 5, 'content' => 'First, install Scout and Algolia’s API client via composer'],
         ];
 
-        $result = Parser::forFile(__DIR__ . '/test.html', 'foo')->parse()->getIndexableObjects();
+        $result = DomParser::forFile(__DIR__ . '/test.html', 'foo')->createIndices()->getIndices();
 
         $this->assertArraySubset($expected, $result);
     }
@@ -63,7 +63,7 @@ class DomParserTest extends \PHPUnit\Framework\TestCase
             ['h1' => 'Install', 'h2' => 'Enabling scout', 'link' => 'foo#Enabling_scout_11', 'importance' => 1],
         ];
 
-        $result = Parser::forFile(__DIR__ . '/test.html', 'foo')->parse()->getIndexableObjects();
+        $result = DomParser::forFile(__DIR__ . '/test.html', 'foo')->createIndices()->getIndices();
 
         $this->assertArraySubset($expected, $result);
     }
