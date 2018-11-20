@@ -1,0 +1,49 @@
+#!/user/bin/env php
+<?php
+
+use Devin\Algolia\DomParser;
+
+echo PHP_EOL;
+echo 'Generating index for the documentation pages';
+echo PHP_EOL;
+
+require_once 'vendor/autoload.php';
+
+$files = [
+    'documentation' => [
+        '/docs/1-algolia-and-scout.html',
+        '/docs/2-install.html',
+        '/docs/3-indexing.html',
+        '/docs/4-options.html',
+    ]
+];
+
+$client = new \AlgoliaSearch\Client('1B5IMJVK2Y', '568fe8a6cd26baeaee3cc7234d971d49');
+
+foreach ($files as $indexName => $uris) {
+    $index = $client->initIndex($indexName);
+
+    // To make sure the index is up to date, we delete it's contents before inserting the new indices.
+    $index->deleteBy([
+        'numericFilters' => [
+            'importance >= 0',
+        ],
+    ]);
+
+    // Make it possible to group the search on the `page` attribute.
+    $index->setSettings([
+        'attributeForDistinct' => 'page',
+        'distinct' => 1,
+    ]);
+
+    foreach ($uris as $uri) {
+        $result = $index->addObjects(
+            DomParser::forFile(__DIR__ . $uri, $uri)
+                ->createIndices()
+                ->getIndices()
+        );
+    }
+}
+
+echo 'Indices created!';
+echo PHP_EOL;

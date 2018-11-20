@@ -1,8 +1,8 @@
 $(() => {
     // Initialize the seach
     const search = instantsearch({
-        appId: 'YOUR_APP_ID',
-        apiKey: 'YOUR_SEARCH_ONLY_API_KEY',
+        appId: '1B5IMJVK2Y',
+        apiKey: '87c5bbf7a50c032dc11dc5b42705fd9e',
         indexName: 'documentation',
         routing: true
     });
