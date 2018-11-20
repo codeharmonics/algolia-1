@@ -97,6 +97,7 @@ class DomParser
      * Parse the DOM contents to indexable objects, ready for use with Algolia Search.
      *
      * @return \Devin\Algolia\DomParser
+     * @throws \Devin\Algolia\Exceptions\InvalidRootSelectorException
      */
     public function createIndices() : self
     {
@@ -136,6 +137,7 @@ class DomParser
         return array_merge($this->formatParentsArray(), [
             $elementName    => $element->textContent,
             'link'          => $this->generateLinkForElement($element, $this->parents, ''),
+            'page'          => basename($this->getCrawler()->getUri()),
             'importance'    => $this->calculateImportanceScore($element),
             '_tags'         => $this->getTags()
         ]);
