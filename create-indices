@@ -34,6 +34,7 @@ foreach ($files as $indexName => $uris) {
     $index->setSettings([
         'attributeForDistinct' => 'page',
         'distinct' => 1,
+        'customRanking' => ['desc(importance)'],
     ]);
 
     foreach ($uris as $uri) {
