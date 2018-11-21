@@ -1,6 +1,7 @@
 # Splitting HTML pages
 
 ## Introduction
+@TODO: Algolia link
 The aim of this tutorial is to walk you through all the steps necessary to create indices we can use with [Algolia]() search.
 We will generate these indices by parsing multiple HTML pages containing documentation about Algolia. 
 The pages that will be parsed, can be found in the `docs` folder in the root of this repository.
@@ -25,17 +26,120 @@ To provide the most value to the end user though, it is important to think about
 The HTML pages in the `docs` folder in this repository, contain documentation on a couple of subjects related to using Algolia.
 A good search function for the documentation is important, so that the reader can easily find the most relevant content for the terms they are looking for.
 
+@TODO: blog post link
 To be able to provide this search functionality, we are going to parse the contents of the documentation pages and create indices for it.
 We will generate these indices based on [this blog post]() by the co-founder of Algolia. 
-Each index will be given a `priority` score based on its contents.
+Each index will be given a `priority` score based on its contents. Let's get started!
 
 
 
-## Steps
-- Setup project
-    - Requirements
-    - 
-- Load the html
-- Traverse the dom
-    - Parse each element
-    - Generate index object
+## Setting up
+In this step, we will walk you through the process of setting up your local machine to parse the documentation pages you can find in the `docs` folder. 
+
+### System requirements
+Please make sure you have the following software and tools installed on your computer:
+- PHP 7 or higher
+- [Composer]() @TODO: composer link
+
+### Necessary files
+From now on, we will assume you've copied the `docs` folder from this repository to your own project folder.
+
+### Composer
+Before we begin, we have to set up auto-loading for our project so the classes we create can be found by PHP.
+Composer will handle the auto-loading for us, but before it can do that we need to setup Composer for our project.
+
+In your project root, run the following command:
+```shell
+$ composer init
+```
+
+This will guide you through an interactive setup where you define your projects settings,
+and generate a `composer.json` file containing all this information.
+
+#### Dependencies
+
+We need to install some dependencies before we can get to work. 
+Run the following commands in your command line:
+```shell
+$ composer require-dev phpunit/phpunit "^6.5"
+$ composer require symfony/dom-crawler "^3.4"
+$ composer require symfony/css-selector "^3.4"
+```
+
+We will develop our parser according to the [test-driven methodology](). @TODO: tdd uitleg link 
+In short, this means we will write unit tests to make sure the code we write (and possibly refactor) will always work as expected.
+We will use PHPUnit to run our unit tests.
+
+Our parser needs to be able to loop over all the elements present in the dom.
+Symfony wrote an excellent package for this which we will use for this purpose.
+
+#### Autoloading our classes
+In order to be able to auto load the classes we will write for out software, 
+we need to tell Composer where to find our classes. 
+We can do this by adding the following snippet to our `composer.json` file generated
+
+```json
+{
+  "autoload": {
+    "psr-4": {
+      "Devin\\Algolia\\": "src/"
+    }
+  }
+}
+```
+
+Be sure to run the `$ composer dump-autoload -o` command after adding this snippet to your `composer.json`.
+
+All your classes in the `Devin\Algolia` namespace, will now be loaded from the `src` folder in your project.
+
+### PHPUnit
+Before we can run our unit tests, we need to create a test suite for PHPUnit.
+To do this, just copy the `phpunit.xml` file in this repository to your project folder, and create a `tests` folder.
+This is where we will keep all our tests.
+
+To run unit tests, simply run the following command from your command line:
+```shell
+$ php vendor/bin/phpunit
+```
+
+
+Your development environment should now be ready to develop, so let's dive in!
+
+
+## HTML Parser
+@TODO: paragraaf uitwerken 
+Parsing an HTML document to create a search index requires some steps.
+
+### Writing our first test
+Following the TDD principles, we should start with writing our tests.
+Since we are creating a parser, let's create a `ParserTest` class in your `tests` folder:
+
+```php
+<?php
+
+class ParserTest extends \PHPUnit\Framework\TestCase
+{
+    public function test_it_runs_tests()
+    {
+        $this->assertEquals(true, true);
+    }
+}
+```
+
+All the tests we will write have to extend the `\PHPUnit\Framework\TestCase` class.
+This class will provide our class with all the testing tools we need, like the `assertEquals`
+
+### Creating our Parser class
+
+### Loading the HTML
+
+### Looping over the elements
+
+### Parsing the elements
+
+### Generating the indices
+
+
+## Further steps
+- Send to algolia
+- Expand parser; more than just body

@@ -2,7 +2,7 @@
 
 use Devin\Algolia\DomParser;
 
-class DomParserTest extends \PHPUnit\Framework\TestCase
+class ParserTest extends \PHPUnit\Framework\TestCase
 {
     public function test_it_creates_an_instance()
     {
