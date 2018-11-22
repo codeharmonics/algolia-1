@@ -1,8 +1,10 @@
 $(() => {
+    const appId = '1B5IMJVK2Y';
+    const apiKey = '87c5bbf7a50c032dc11dc5b42705fd9e';
     // Initialize the search
     const search = instantsearch({
-        appId: '1B5IMJVK2Y',
-        apiKey: '87c5bbf7a50c032dc11dc5b42705fd9e',
+        appId: appId,
+        apiKey: apiKey,
         indexName: 'devin_documentation',
         routing: true
     });

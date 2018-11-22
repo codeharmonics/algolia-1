@@ -21,7 +21,7 @@ If you have any questions or feedback, [please let me know](mailto:devinbeeuwkes
   $ php vendor/bin/phpunit
   ```
  
- Open the `create_indices` file in your favorite editor, and replace the values of the `$appId` and `$appSecret` variables to contain your own ID and API key.
+ Open the `create_indices` file in your favorite editor, and replace the values of the `$appId` and `$apiKey` variables to contain your own app ID and API key.
  
  To create the indices for the documentation pages, run:
 ```shell
@@ -32,12 +32,15 @@ This will create an index called `devin_documentation` for easy lookup in your a
 I chose to create the indices through a command instead of (for example) a webpage to keep it easier, since you are already in the terminal to run the commands listed above.
 
 ### 2. Search front-end
+Open the [`assets/search.js`](assets/search.js) file in your favorite editor, and change the `appId` and `apiKey` variables at the top of the file to contain your own app ID and search-only API key. 
+
+ 
 To see the search implementation using the indices created in the step above, run the following command from the project root:
 
  ```shell
  $ php serve
  ```
-This is a command I added that will automatically (try) to set up a webserver using the build-in webserver from PHP. 
+This is a command I added that will automatically (try) to set up a webserver using the built-in webserver from PHP. 
 Alternatively, you can [start a webserver](http://php.net/manual/en/features.commandline.webserver.php) yourself using the following command:
 
 ```shell

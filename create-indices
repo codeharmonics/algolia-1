@@ -4,7 +4,7 @@
 use Devin\Algolia\Parser;
 
 $appId = '1B5IMJVK2Y';
-$appSecret = '568fe8a6cd26baeaee3cc7234d971d49';
+$apiKey = '568fe8a6cd26baeaee3cc7234d971d49';
 
 echo PHP_EOL;
 echo 'Generating index for the documentation pages';
@@ -21,7 +21,7 @@ $files = [
     ]
 ];
 
-$client = new \AlgoliaSearch\Client($appId, $appSecret);
+$client = new \AlgoliaSearch\Client($appId, $apiKey);
 
 foreach ($files as $indexName => $uris) {
     $index = $client->initIndex($indexName);
