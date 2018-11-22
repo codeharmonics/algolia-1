@@ -3,6 +3,9 @@
 
 use Devin\Algolia\Parser;
 
+$appId = '1B5IMJVK2Y';
+$appSecret = '568fe8a6cd26baeaee3cc7234d971d49';
+
 echo PHP_EOL;
 echo 'Generating index for the documentation pages';
 echo PHP_EOL;
@@ -10,7 +13,7 @@ echo PHP_EOL;
 require_once 'vendor/autoload.php';
 
 $files = [
-    'documentation' => [
+    'devin_documentation' => [
         '/docs/1-algolia-and-scout.html',
         '/docs/2-install.html',
         '/docs/3-indexing.html',
@@ -18,7 +21,7 @@ $files = [
     ]
 ];
 
-$client = new \AlgoliaSearch\Client('1B5IMJVK2Y', '568fe8a6cd26baeaee3cc7234d971d49');
+$client = new \AlgoliaSearch\Client($appId, $appSecret);
 
 foreach ($files as $indexName => $uris) {
     $index = $client->initIndex($indexName);
@@ -34,7 +37,7 @@ foreach ($files as $indexName => $uris) {
     $index->setSettings([
         'attributeForDistinct' => 'page',
         'distinct' => 1,
-        'customRanking' => ['desc(importance)'],
+        'customRanking' => ['asc(importance)'],
     ]);
 
     foreach ($uris as $uri) {

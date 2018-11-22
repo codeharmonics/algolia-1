@@ -1,14 +1,48 @@
 # Parsing HTML with PHP
 
 ## Introduction
-* intro
-* Algolia
-* Goals of this tutorial
+The aim of this tutorial is to walk you through all the steps necessary to create indices we can use with [Algolia](https://www.algolia.com/) search.
+We will generate these indices by parsing multiple HTML pages containing documentation about Algolia. 
+The pages that will be parsed, can be found in the `docs` folder in the root of this repository.
+
+### Algolia
+Algolia provides a wide array of services for developers and the platforms they work on. 
+These services range from an analytics service, to search as a service.
+In this tutorial, we will create indices to use with their _search as a service_.
+
+Algolia makes creating a search a breeze for developers, saving them hours of work and optimalization.
+This enables developers to focus their effort on providing the most value to the end user of the platform they are working on.
+Algolia will take care of the search, providing a great user experience to the end user with a lightning fast and user-friendly search through the content provided by the developers. 
+This content is provided by sending so called _indices_ to the Algolia Service
+
+#### Indices
+Algolia makes use of indices to provide their _search as a service_.
+An index is a schemaless object sent to Algolia by the developer.
+Because an index is schemaless, it is extremely easy for developers to generate them and send them to Algolia.
+To provide the most value to the end user though, it is important to think about how your users will use the search on your website, and what content the user will be looking for.
+
+## Goals of this tutorial
+In this tutorial, we will walk you through all the steps you need to take to parse HTML documentation pages and build indices for their contents.
+These indices will be formatted according to the [hierarchical](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example/#1-create-small-hierarchical-records) structure [this](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example) article proposes.
+
+An example index structure for a paragraph of documentation:
+```json
+{
+    "h1": "Validation", 
+    "h2": "Introduction", 
+    "link": "validation#introduction", 
+    "importance": 1, 
+    "_tags": [
+        "5.1"
+    ], 
+    "objectID": "master-validation#introduction-eeafb566c2af34e739e2685efdb45524"
+}
+```
 
 ## Requirements
 This tutorial requires you have a basic understanding of PHP, 
-and that you know how to use the [Composer]() dependency manager to autoload the classes you will create.
-If you need to learn more about this, [here]() is an excellent tutorial on how to get started.
+and that you know how to use the [Composer](https://getcomposer.org/doc/00-intro.md) dependency manager to autoload the classes you will create.
+If you need to learn more about this, [here](https://vegibit.com/composer-autoloading-tutorial/) is an excellent tutorial on how to get started.
 
 ### System requirements
 Your system must have the following software installed:
@@ -16,7 +50,7 @@ Your system must have the following software installed:
 * Composer
 
 ### Project
-If you're not sure how to set up your project, we've created a [repository]() you can clone to use as a starting point.
+If you're not sure how to set up your project, we've created a [repository](https://github.com/devinbeeuwkes/boilerplate) you can clone to use as a starting point.
 It covers the basics for you, like auto-loading your classes and setting up a basic testsuite.
 
 ## Building an HTML parser
@@ -134,6 +168,8 @@ This makes it important to keep an array of all the parent elements that were be
 
 Sometimes you will need to reset this parents array, for example when you encouter a new `h2` element after you indexed an `h3` element.
 To keep track of when you need to reset, you can use a `priorityOrder` array for example, where you list the elements of interest from most interesting (`h1`) to least interesting (`p`).
+If an element is not in the `priorityOrder` array, you should skip the indexing of this element, since this element is not of our interest.
+
 When you index a new element, you check if any of the elements _after_ that tagname in the array occur in your parents array, like so:
 
 ```php
@@ -144,8 +180,12 @@ $priorityOrder = ['h1', 'h2', 'h3', 'h4', 'p'];
 foreach($bodyContents as $element) {
     // Remove unnecessary parents
     $prioIndex = \array_search($element->tagName, $priorityOrder);
+    if ($prioIndex === false) {
+        continue;
+    }
+    
     for ($i = $prioIndex; $i < count($priorityOrder); $i++) {
-        unset($parents[$prioIndex]);
+        unset($parents[$priorityOrder[$i]]);
     }
     
     // Add the current item to the parent array
@@ -209,10 +249,10 @@ This means your code to calculate the score can look something like this:
             // Assume we have a 'p' tag
             $score = 0;
             foreach($parents as $tag => $parent) {
-                if (array_key_exists($element->tagName, $scores)) {
+                if (array_key_exists($tag, $scores)) {
                     // We overwrite score if there is a 'lower' parent
                     // E.g: if a p element has h2 and h1 parents, we use the h2 parent since this is the closest one
-                    $score = $scores[$element->tagName];
+                    $score = $scores[$tag];
                 }
             }
             $score += 4;
@@ -222,9 +262,10 @@ This means your code to calculate the score can look something like this:
 
 ```
 
-### Putting it all together
+### Finalizing the attribute list
 The nice thing about keeping your parent elements in an array, is that the result of this array is almost the complete index you need to build!
-All this is missing now to get the results as described in the beginning of this tutorial, is to combine the `parents` array with `score`, `link` and `_tags` attributes!
+All this is missing now to get the results as described in the beginning of this tutorial, is to map the `parents` array to get only the parent content instead of the whole object provided by the `Crawler` class,
+and combine this with the `score`, `link` and `_tags` attributes!
 
 The `_tags` attribute will be used to build up the url. It contains all elements that should be appended before the filename.
 In your case, the documentation files you're parsing are in the `docs` folder, so the `_tags` array would contain only one entry: `docs`!
@@ -257,11 +298,13 @@ Your code to generate the anchor would look something like this:
         $anchor = '';
         
         foreach(array_reverse($parents) as $parent) {
-            foreach ($parent->children() as $child) {
+            foreach ($parent->getElementsByTagName('a') as $child) {
                 if ($child->tagName === 'a' && $child->getAttribute('id')) {
                     $anchor = '#' . $child->getAttribute('id');
                 }   
             }
+            
+            // We escape the loop as soon as we have the closest anchor
             if (! empty($anchor)) {
                 break;
             }
@@ -274,9 +317,129 @@ At last, you append the anchor to the `link` variable:
 ```php
 <?php
     
-    $link .= $anchor;
+        foreach($bodyContents as $element) {
+            // Create the link and body variable for this element
+            
+            $link .= $anchor;
+        }
+```
+
+### Putting it al together
+With all the data available that you need, all that is left is to put it together.
+To do this, loop over the parents and get the `textContent` for every element.
+Merge this array with an array containing the `score`, `link` and `_tags` attributes.
+
+```php
+<?php
+
+    $indices = [];
+    foreach($bodyContents as $element) {
+            
+        $data = [];
+        foreach ($parents as $parent => $element) {
+            $data[$parent] = $element->textContent;
+        }
+        
+        $indices[] = array_merge($data, [
+            '_tags'      => $tags,
+            'link'       => $link,
+            'importance' => $score,
+        ]);
+    }
+    
+    return $indices;
+    
+```
+
+## Done!
+Congratulations, you've finished building the structure for your indices!
+The final code will look something like this:
+```php
+$content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
+
+    $crawler = new \Symfony\Component\DomCrawler\Crawler($content);
+    $bodyElements = $crawler->filter('body')->children();
+    
+    $priorityOrder = ['h1', 'h2', 'h3', 'h4', 'p'];
+    $scores = ['h1' => 0, 'h2' => 1, 'h3' => 2, 'h4' => 3];
+    $indices = [];
+    $parents = [];
+
+    foreach($bodyElements as $element) {
+        // Remove unnecessary parents
+        $prioIndex = \array_search($element->tagName, $priorityOrder, true);
+        if ($prioIndex === false) {
+            continue;
+        }
+
+        for ($i = $prioIndex; $i < count($priorityOrder); $i++) {
+            unset($parents[$priorityOrder[$i]]);
+        }
+
+        // Add the current item to the parent array
+        $parents[$element->tagName] = $element;
+
+        if (array_key_exists($element->tagName, $scores)) {
+            $score = $scores[$element->tagName];
+        } else {
+            // Assume we have a 'p' tag
+            $score = 0;
+            foreach($parents as $tag => $parent) {
+                if (array_key_exists($tag, $scores)) {
+                    // We overwrite score if there is a 'lower' parent
+                    // E.g: if a p element has h2 and h1 parents, we use the h2 parent since this is the closest one
+                    $score = $scores[$tag];
+                }
+            }
+            
+            $score += 4;
+        }
+
+        $tags = ['docs'];
+        $link = basename(__DIR__ . '/docs/1-algolia-and-scout.html');
+
+        $anchor = '';
+        foreach(array_reverse($parents) as $parent) {
+            foreach ($parent->getElementsByTagName('a') as $child) {
+                if ($child->getAttribute('id')) {
+                    $anchor = '#' . $child->getAttribute('id');
+                }
+            }
+            // We escape the loop as soon as we have the closest anchor
+            if (! empty($anchor)) {
+                break;
+            }
+        }
+        $link .= $anchor;
+
+        $data = [];
+        foreach ($parents as $parent => $element) {
+            $data[$parent] = $element->textContent;
+        }
+
+        $indices[] = array_merge($data, [
+            '_tags'      => $tags,
+            'link'       => $link,
+            'importance' => $score,
+        ]);
+    }
+
+    return $indices;
 ```
 
 
 
+
 ## Further steps
+Creating an HTML parser is a good start for your journey. 
+However, the code we wrote is not very flexible or reusable. 
+Here are some ideas to put your skills to the test, and possibly further your knowledge in HTML parsing:
+```
+* Extract all the logic of this parser into classes (see the src folder for inspiration on this)
+* Create a custom search using Algolia
+* Write unit tests to test the functionallity and make sure refactoring your code doesn't break how it works
+* Adjust your parser so that it can read any page, instead of the very basic one used for this tutorial
+```
+
+___
+Cheers!
