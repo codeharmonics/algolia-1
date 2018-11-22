@@ -46,8 +46,8 @@ If you need to learn more about this, [here](https://vegibit.com/composer-autolo
 
 ### System requirements
 Your system must have the following software installed:
-* PHP 7.0 or higher
-* Composer
+* [PHP 7.0 or higher](http://php.net/manual/en/install.php)
+* [Composer](https://getcomposer.org/doc/00-intro.md)
 
 ### Project
 If you're not sure how to set up your project, we've created a [repository](https://github.com/devinbeeuwkes/boilerplate) you can clone to use as a starting point.
