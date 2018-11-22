@@ -1,7 +1,7 @@
 #!/user/bin/env php
 <?php
 
-use Devin\Algolia\DomParser;
+use Devin\Algolia\Parser;
 
 echo PHP_EOL;
 echo 'Generating index for the documentation pages';
@@ -39,7 +39,7 @@ foreach ($files as $indexName => $uris) {
 
     foreach ($uris as $uri) {
         $result = $index->addObjects(
-            DomParser::forFile(__DIR__ . $uri, $uri)
+            Parser::forFile(__DIR__ . $uri, $uri)
                 ->createIndices()
                 ->getIndices()
         );

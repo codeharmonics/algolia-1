@@ -10,7 +10,7 @@ use Devin\Algolia\Exceptions\InvalidPathException;
 use Devin\Algolia\Exceptions\UnindexableException;
 use Symfony\Component\DomCrawler\Crawler;
 
-class DomParser
+class Parser
 {
     use TraversesDom;
 
@@ -79,7 +79,7 @@ class DomParser
      * @param string $path
      * @param string $baseUri
      *
-     * @return \Devin\Algolia\DomParser
+     * @return \Devin\Algolia\Parser
      * @throws \Devin\Algolia\Exceptions\InvalidPathException
      */
     public static function forFile(string $path, string $baseUri = '') : self
@@ -96,7 +96,7 @@ class DomParser
     /**
      * Parse the DOM contents to indexable objects, ready for use with Algolia Search.
      *
-     * @return \Devin\Algolia\DomParser
+     * @return \Devin\Algolia\Parser
      * @throws \Devin\Algolia\Exceptions\InvalidRootSelectorException
      */
     public function createIndices() : self
@@ -168,7 +168,7 @@ class DomParser
      *
      * @param \DOMElement $element
      *
-     * @return \Devin\Algolia\DomParser
+     * @return \Devin\Algolia\Parser
      */
     protected function rebaseParentsIfNeeded(\DOMElement $element) : self
     {

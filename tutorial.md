@@ -1,145 +1,282 @@
-# Splitting HTML pages
+# Parsing HTML with PHP
 
 ## Introduction
-@TODO: Algolia link
-The aim of this tutorial is to walk you through all the steps necessary to create indices we can use with [Algolia]() search.
-We will generate these indices by parsing multiple HTML pages containing documentation about Algolia. 
-The pages that will be parsed, can be found in the `docs` folder in the root of this repository.
+* intro
+* Algolia
+* Goals of this tutorial
 
-### Algolia
-Algolia provides a wide array of services for developers and the platforms they work on. 
-These services range from an analytics service, to search as a service.
-In this tutorial, we will create indices to use with their _search as a service_.
-
-Algolia makes creating a search a breeze for developers, saving them hours of work and optimalization.
-This enables developers to focus their effort on providing the most value to the end user of the platform they are working on.
-Algolia will take care of the search, providing a great user experience to the end user with a lightning fast and user-friendly search through the content provided by the developers. 
-This content is provided by sending so called _indices_ to the Algolia Service
-
-#### Indices
-Algolia makes use of indices to provide their _search as a service_.
-An index is a schemaless object sent to Algolia by the developer.
-Because an index is schemaless, it is extremely easy for developers to generate them and send them to Algolia.
-To provide the most value to the end user though, it is important to think about how your users will use the search on your website, and what content the user will be looking for. 
-
-### The documentation pages
-The HTML pages in the `docs` folder in this repository, contain documentation on a couple of subjects related to using Algolia.
-A good search function for the documentation is important, so that the reader can easily find the most relevant content for the terms they are looking for.
-
-@TODO: blog post link
-To be able to provide this search functionality, we are going to parse the contents of the documentation pages and create indices for it.
-We will generate these indices based on [this blog post]() by the co-founder of Algolia. 
-Each index will be given a `priority` score based on its contents. Let's get started!
-
-
-
-## Setting up
-In this step, we will walk you through the process of setting up your local machine to parse the documentation pages you can find in the `docs` folder. 
+## Requirements
+This tutorial requires you have a basic understanding of PHP, 
+and that you know how to use the [Composer]() dependency manager to autoload the classes you will create.
+If you need to learn more about this, [here]() is an excellent tutorial on how to get started.
 
 ### System requirements
-Please make sure you have the following software and tools installed on your computer:
-- PHP 7 or higher
-- [Composer]() @TODO: composer link
+Your system must have the following software installed:
+* PHP 7.0 or higher
+* Composer
 
-### Necessary files
-From now on, we will assume you've copied the `docs` folder from this repository to your own project folder.
+### Project
+If you're not sure how to set up your project, we've created a [repository]() you can clone to use as a starting point.
+It covers the basics for you, like auto-loading your classes and setting up a basic testsuite.
 
-### Composer
-Before we begin, we have to set up auto-loading for our project so the classes we create can be found by PHP.
-Composer will handle the auto-loading for us, but before it can do that we need to setup Composer for our project.
+## Building an HTML parser
+Before you start coding, let's have a look at the steps that our code will need to go through in order to parse the HTML pages found in the `docs` folder of this repository.
 
-In your project root, run the following command:
-```shell
-$ composer init
+You will need to:
+
+```
+* Load the HTML files
+* Loop over all elements
+* Determine which elements are relevant, and which are not
+* Build the structure for our relevant elements
+* Return and use our results
 ```
 
-This will guide you through an interactive setup where you define your projects settings,
-and generate a `composer.json` file containing all this information.
+Let's get started!
 
-#### Dependencies
-
-We need to install some dependencies before we can get to work. 
-Run the following commands in your command line:
-```shell
-$ composer require-dev phpunit/phpunit "^6.5"
-$ composer require symfony/dom-crawler "^3.4"
-$ composer require symfony/css-selector "^3.4"
-```
-
-We will develop our parser according to the [test-driven methodology](). @TODO: tdd uitleg link 
-In short, this means we will write unit tests to make sure the code we write (and possibly refactor) will always work as expected.
-We will use PHPUnit to run our unit tests.
-
-Our parser needs to be able to loop over all the elements present in the dom.
-Symfony wrote an excellent package for this which we will use for this purpose.
-
-#### Autoloading our classes
-In order to be able to auto load the classes we will write for out software, 
-we need to tell Composer where to find our classes. 
-We can do this by adding the following snippet to our `composer.json` file generated
-
-```json
-{
-  "autoload": {
-    "psr-4": {
-      "Devin\\Algolia\\": "src/"
-    }
-  }
-}
-```
-
-Be sure to run the `$ composer dump-autoload -o` command after adding this snippet to your `composer.json`.
-
-All your classes in the `Devin\Algolia` namespace, will now be loaded from the `src` folder in your project.
-
-### PHPUnit
-Before we can run our unit tests, we need to create a test suite for PHPUnit.
-To do this, just copy the `phpunit.xml` file in this repository to your project folder, and create a `tests` folder.
-This is where we will keep all our tests.
-
-To run unit tests, simply run the following command from your command line:
-```shell
-$ php vendor/bin/phpunit
-```
-
-
-Your development environment should now be ready to develop, so let's dive in!
-
-
-## HTML Parser
-@TODO: paragraaf uitwerken 
-Parsing an HTML document to create a search index requires some steps.
-
-### Writing our first test
-Following the TDD principles, we should start with writing our tests.
-Since we are creating a parser, let's create a `ParserTest` class in your `tests` folder:
+### Loading HTML files
+In order for PHP to be able to read the HTML files, you need to fetch the content of it.
+Luckily, PHP has a built-in `file_get_contents` function which makes this easy for you to do.
+You just need to provide the path to the file you want to get the contents of: 
 
 ```php
 <?php
 
-class ParserTest extends \PHPUnit\Framework\TestCase
-{
-    public function test_it_runs_tests()
-    {
-        $this->assertEquals(true, true);
-    }
+// Load the file contents
+$content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
+```
+
+Since you'll create different objects for all four of the pages found in the `docs` folder,
+it's best to load them all separately, instead of concatenating all the files into one big variable
+
+### Loop over all elements
+Now that you have the HTML file contents in a variable, we need to loop over the elements in them.
+However, PHP does not know the contents of the file is HTML, it just provides you a string. 
+This is where the `symfony/dom-crawler` package comes in; it makes looping over HTML elements a breeze.
+
+To include `symfony/dom-crawler` in your project, run the following command in your terminal:
+```bash
+$ composer require symfony/dom-crawler "^3.4"
+```
+
+You can now instantiate a new `Crawler` class instance, which will help you traverse the dom.
+The `Crawler` class needs to know what HTML to traverse, so pass it to its constructor.
+
+
+```php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+// Load the file contents
+$content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
+
+$crawler = new \Symfony\Component\DomCrawler\Crawler($content);
+
+```
+
+The crawler class is iterable, meaning you can use it in a foreach-loop and traverse through its contents.
+However, when you try this, you will see it provides you with just one object, the `html` element and all the content in it.
+Since we want to parse only the contents of the `body` tag, you need to filter the `Crawler` object.
+You can achieve this by using the `filter` method, passing a CSS selector as its parameter.
+
+> The CSS selector for the `body` tag is 'body'
+
+Because we want the children of the `body` element, you have to chain the `filter` method with the `children` method, like this:
+
+```php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+// Load the file contents
+$content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
+
+$crawler = new \Symfony\Component\DomCrawler\Crawler($content);
+$bodyElements = $crawler->filter('body')->children();
+```
+
+This code will give you an error, because the `Crawler` object requires another `symfony` package to use the CSS selector.
+To include this package, run the following command in your terminal:
+
+```shell
+$ composer require symfony/css-selector "^3.4"
+```
+
+If you now loop over the `$bodyContents` variable, you will see it will give you all the elements that you need to start indexing.
+
+```php
+<?php
+
+foreach($bodyElements as $element) {
+    // Your logic goes here
 }
 ```
 
-All the tests we will write have to extend the `\PHPUnit\Framework\TestCase` class.
-This class will provide our class with all the testing tools we need, like the `assertEquals`
+### Classifying elements of interest
+The HTML pages that you will parse only contains elements which are interesting to index, since there are no elements with the purpose of styling, or any menus for example.
+This means that for this tutorial you don't have to filter out any elements.
 
-### Creating our Parser class
+### Building your records
+Now that you can loop over all available elements, it's time to build records for these elements.
+To do this, use the following logic:
 
-### Loading the HTML
+```
+* h1 elements have their own record
+* h2 elements have their own record, with the parent H1 record if it has such a parent
+* h3 elements have their own record, with the parent H1 and H2 records if it has such parents
+* p elements have their own record, with the parent H1, H2 and H3 records if it has such parents
+```
 
-### Looping over the elements
 
-### Parsing the elements
+For performance reasons, you only want to loop through the elements once. 
+This makes it important to keep an array of all the parent elements that were being looped over.
 
-### Generating the indices
+Sometimes you will need to reset this parents array, for example when you encouter a new `h2` element after you indexed an `h3` element.
+To keep track of when you need to reset, you can use a `priorityOrder` array for example, where you list the elements of interest from most interesting (`h1`) to least interesting (`p`).
+When you index a new element, you check if any of the elements _after_ that tagname in the array occur in your parents array, like so:
+
+```php
+<?php
+
+$parents = [];
+$priorityOrder = ['h1', 'h2', 'h3', 'h4', 'p'];
+foreach($bodyContents as $element) {
+    // Remove unnecessary parents
+    $prioIndex = \array_search($element->tagName, $priorityOrder);
+    for ($i = $prioIndex; $i < count($priorityOrder); $i++) {
+        unset($parents[$prioIndex]);
+    }
+    
+    // Add the current item to the parent array
+    $parents[$element->tagName] = $element;
+    
+}
+```
+
+Now, everytime you encouter a new `h2` element, the previous one _and_ all of it's children will be unset for the parents array.
+This makes our parents array good for direct use in our indices.
+The above code will result in a parents array in the following format:
+```php
+<?php
+    $parents = [
+        'h1' => 'Algolia and Laravel Scout',
+        'h2' => 'Introducing Laravel Scout',
+        // h3 is missing, because it is not in the current page 
+        // h4 is missing, because it is not in the current page 
+        'p'  => 'With the addition of ...'
+    ];
+```
+
+### Keeping scores
+To provide an importance score of how relevant an entry actually is, consider the following:
+```
+* H1 gets a score of 0
+* H2 gets a score of 1
+* H3 gets a score of 2
+* H4 gets a score of 3
+* P directly after H1 gets a score of 4
+* P directly after H2 gets a score of 5
+* P directly after H3 gets a score of 6
+* P directly after H4 gets a score of 7
+```
+
+
+In order to calculate the score above, you just need to check which element you're dealing with.
+Calculating the score for any of the `h1` elements is easy, because they do not depend on one of their parents.
+However, this is different for the `p` elements.
+But since your `parents` array now contains all the elements of interest, we can easily get the closest parent to any `p` element, and use this parent to calculate the score.
+As you can deduct from the score matrix above, the score of a `p` element is the score of its closest parent + 4.
+
+This means your code to calculate the score can look something like this:
+
+```php
+<?php
+
+    $scores = [
+        'h1' => 0,
+        'h2' => 1,
+        'h3' => 2,
+        'h4' => 3,
+    ];
+    
+    foreach($bodyContents as $element) {
+        // Your logic goes here
+    
+        if (array_key_exists($element->tagName, $scores)) {
+            $score = $scores[$element->tagName];
+        } else {
+            // Assume we have a 'p' tag
+            $score = 0;
+            foreach($parents as $tag => $parent) {
+                if (array_key_exists($element->tagName, $scores)) {
+                    // We overwrite score if there is a 'lower' parent
+                    // E.g: if a p element has h2 and h1 parents, we use the h2 parent since this is the closest one
+                    $score = $scores[$element->tagName];
+                }
+            }
+            $score += 4;
+        }
+        
+    }
+
+```
+
+### Putting it all together
+The nice thing about keeping your parent elements in an array, is that the result of this array is almost the complete index you need to build!
+All this is missing now to get the results as described in the beginning of this tutorial, is to combine the `parents` array with `score`, `link` and `_tags` attributes!
+
+The `_tags` attribute will be used to build up the url. It contains all elements that should be appended before the filename.
+In your case, the documentation files you're parsing are in the `docs` folder, so the `_tags` array would contain only one entry: `docs`!
+```php
+<?php
+
+$tags = ['docs'];
+```
+
+
+The `link` attribute will be the pagename, appended with an `#element_or_closest_parent` anchor if needed.
+Since the base of it is the pagename, we can retrieve it by using the `basename` method in PHP, providing the path to the file you are parsing as an attribute.
+
+```php
+<?php
+
+    $link = basename(__DIR__ . '/docs/1-algolia-and-scout.html');
+```
+  
+To determine if you should attach an anchor to the link, you need to check if the current element has an anchor (`a`) tag in it's content **with** an `id` property.
+You can accomplish this by looping over the children of the element you are parsing.
+However, since we want to start with the lowest parent and work our way up, you need to reverse the array.
+You can accomplish this by using the `array_reverse` method.
+
+Your code to generate the anchor would look something like this:
+```php
+<?php
+
+    foreach($bodyContents as $element) {
+        $anchor = '';
+        
+        foreach(array_reverse($parents) as $parent) {
+            foreach ($parent->children() as $child) {
+                if ($child->tagName === 'a' && $child->getAttribute('id')) {
+                    $anchor = '#' . $child->getAttribute('id');
+                }   
+            }
+            if (! empty($anchor)) {
+                break;
+            }
+        }
+    }
+
+```
+
+At last, you append the anchor to the `link` variable:
+```php
+<?php
+    
+    $link .= $anchor;
+```
+
 
 
 ## Further steps
-- Send to algolia
-- Expand parser; more than just body
