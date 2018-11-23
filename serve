@@ -1,8 +1,0 @@
-#!/user/bin/env php
-<?php
-
-echo PHP_EOL;
-echo 'Starting server on <http://127.0.0.1:8000>';
-echo PHP_EOL;
-
-exec('php -S 127.0.0.1:8000');
