@@ -1,31 +1,33 @@
 # Parsing HTML with PHP
 
 ## Introduction
-The aim of this tutorial is to walk you through all the steps necessary to create indices we can use with [Algolia](https://www.algolia.com/) search.
-We will generate these indices by parsing multiple HTML pages containing documentation about Algolia. 
+The aim of this tutorial is to walk you through all the steps necessary to create records you can use with [Algolia](https://www.algolia.com/) search.
+We will generate these records by parsing multiple HTML pages containing documentation about Algolia. 
 The pages that will be parsed, can be found in the `docs` folder in the root of this repository.
 
 ### Algolia
 Algolia provides a wide array of services for developers and the platforms they work on. 
 These services range from an analytics service, to search as a service.
-In this tutorial, we will create indices to use with their _search as a service_.
+The indicises you will create in this tutorial, can be used with their _search as a service_.
 
 Algolia makes creating a search a breeze for developers, saving them hours of work and optimalization.
 This enables developers to focus their effort on providing the most value to the end user of the platform they are working on.
 Algolia will take care of the search, providing a great user experience to the end user with a lightning fast and user-friendly search through the content provided by the developers. 
-This content is provided by sending so called _indices_ to the Algolia Service
+This content is provided by sending so called _records_ to the Algolia service.
 
-#### Indices
-Algolia makes use of indices to provide their _search as a service_.
-An index is a schemaless object sent to Algolia by the developer.
-Because an index is schemaless, it is extremely easy for developers to generate them and send them to Algolia.
+#### records
+Algolia makes use of records to provide their _search as a service_.
+A record is a schemaless object sent to Algolia by the developer.
+Algolia will use the records sent, and create an index. This index, basically, is a searchable collection of records.
+
+Because a record is schemaless, it is extremely easy for developers to generate them and send them to Algolia.
 To provide the most value to the end user though, it is important to think about how your users will use the search on your website, and what content the user will be looking for.
 
 ## Goals of this tutorial
-In this tutorial, we will walk you through all the steps you need to take to parse HTML documentation pages and build indices for their contents.
-These indices will be formatted according to the [hierarchical](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example/#1-create-small-hierarchical-records) structure [this](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example) article proposes.
+In this tutorial, we will walk you through all the steps you need to take to parse HTML documentation pages and build records for their contents.
+These records will be formatted according to the [hierarchical](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example/#1-create-small-hierarchical-records) structure [this](https://blog.algolia.com/how-to-build-a-helpful-search-for-technical-documentation-the-laravel-example) article proposes.
 
-An example index structure for a paragraph of documentation:
+An example record structure for a paragraph of documentation:
 ```json
 {
     "h1": "Validation", 
@@ -81,7 +83,9 @@ $content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
 ```
 
 Since you'll create different objects for all four of the pages found in the `docs` folder,
-it's best to load them all separately, instead of concatenating all the files into one big variable
+it's best to load them all separately, instead of concatenating all the files into one big variable.
+For demonstration purposes, this tutorial will only cover the parsing of the first page.
+You have the freedom to decide how you want to handle the other pages.
 
 ### Loop over all elements
 Now that you have the HTML file contents in a variable, we need to loop over the elements in them.
@@ -94,7 +98,7 @@ $ composer require symfony/dom-crawler "^3.4"
 ```
 
 You can now instantiate a new `Crawler` class instance, which will help you traverse the dom.
-The `Crawler` class needs to know what HTML to traverse, so pass it to its constructor.
+The `Crawler` class needs to know what HTML to traverse, so pass the file contents you loaded before to its constructor.
 
 
 ```php
@@ -116,7 +120,7 @@ You can achieve this by using the `filter` method, passing a CSS selector as its
 
 > The CSS selector for the `body` tag is 'body'
 
-Because we want the children of the `body` element, you have to chain the `filter` method with the `children` method, like this:
+Because you want all the child elements of the `body` element, you have to chain the `filter` method with the `children` method, like this:
 
 ```php
 <?php
@@ -137,7 +141,7 @@ To include this package, run the following command in your terminal:
 $ composer require symfony/css-selector "^3.4"
 ```
 
-If you now loop over the `$bodyContents` variable, you will see it will give you all the elements that you need to start indexing.
+If you now loop over the `$bodyContents` variable, you will see it will give you all the elements that you need to start creating your records.
 
 ```php
 <?php
@@ -149,7 +153,7 @@ foreach($bodyElements as $element) {
 
 ### Classifying elements of interest
 The HTML pages that you will parse only contains elements which are interesting to index, since there are no elements with the purpose of styling, or any menus for example.
-This means that for this tutorial you don't have to filter out any elements.
+The only elements we are interested in, are `h1`, `h2`, `h3`, `h4` and `p` tags, all other tags can be skipped.
 
 ### Building your records
 Now that you can loop over all available elements, it's time to build records for these elements.
@@ -159,18 +163,20 @@ To do this, use the following logic:
 * h1 elements have their own record
 * h2 elements have their own record, with the parent H1 record if it has such a parent
 * h3 elements have their own record, with the parent H1 and H2 records if it has such parents
-* p elements have their own record, with the parent H1, H2 and H3 records if it has such parents
+* h4 elements have their own record, with the parent H1, H2 and H3 records if it has such parents
+* p elements have their own record, with the parent H1, H2, H3 and H4 records if it has such parents
 ```
 
 
 For performance reasons, you only want to loop through the elements once. 
-This makes it important to keep an array of all the parent elements that were being looped over.
+This makes it important to keep an array of all the parent _relevant_ elements that were being looped over.
 
 Sometimes you will need to reset this parents array, for example when you encouter a new `h2` element after you indexed an `h3` element.
-To keep track of when you need to reset, you can use a `priorityOrder` array for example, where you list the elements of interest from most interesting (`h1`) to least interesting (`p`).
+To keep track of when you need to reset, you can use a `priorityOrder`, where you list all the elements of interest from most interesting (`h1`) to least interesting (`p`).
 If an element is not in the `priorityOrder` array, you should skip the indexing of this element, since this element is not of our interest.
 
-When you index a new element, you check if any of the elements _after_ that tagname in the array occur in your parents array, like so:
+When you index a new element, you check if any of the elements _after_ that tagname in the array occur in your parents array.
+If this situation occurs, you have to remove these elements from the parents array.
 
 ```php
 <?php
@@ -195,7 +201,6 @@ foreach($bodyContents as $element) {
 ```
 
 Now, everytime you encouter a new `h2` element, the previous one _and_ all of it's children will be unset for the parents array.
-This makes our parents array good for direct use in our indices.
 The above code will result in a parents array in the following format:
 ```php
 <?php
@@ -209,7 +214,7 @@ The above code will result in a parents array in the following format:
 ```
 
 ### Keeping scores
-To provide an importance score of how relevant an entry actually is, consider the following:
+To provide an importance score of how relevant an entry actually is, please consider the following:
 ```
 * H1 gets a score of 0
 * H2 gets a score of 1
@@ -222,10 +227,11 @@ To provide an importance score of how relevant an entry actually is, consider th
 ```
 
 
-In order to calculate the score above, you just need to check which element you're dealing with.
-Calculating the score for any of the `h1` elements is easy, because they do not depend on one of their parents.
-However, this is different for the `p` elements.
-But since your `parents` array now contains all the elements of interest, we can easily get the closest parent to any `p` element, and use this parent to calculate the score.
+In order to calculate the score above, you need to check which element you're dealing with.
+Calculating the score for any of the `h*` elements is easy, because they do not depend on one of their parents.
+This is different for the `p` elements, however, because its score depends on its closest parent.
+
+Since your `parents` array now contains all the elements of interest, you can easily get the closest parent to any `p` element, and use this parent to calculate the score.
 As you can deduct from the score matrix above, the score of a `p` element is the score of its closest parent + 4.
 
 This means your code to calculate the score can look something like this:
@@ -263,8 +269,8 @@ This means your code to calculate the score can look something like this:
 ```
 
 ### Finalizing the attribute list
-The nice thing about keeping your parent elements in an array, is that the result of this array is almost the complete index you need to build!
-All this is missing now to get the results as described in the beginning of this tutorial, is to map the `parents` array to get only the parent content instead of the whole object provided by the `Crawler` class,
+The nice thing about keeping your parent elements in an array, is that the result of this array is almost the complete record you need to build!
+All that is missing now to get the results as described in the beginning of this tutorial, is to map the `parents` array to get only the parent content instead of the whole object provided by the `Crawler` class,
 and combine this with the `score`, `link` and `_tags` attributes!
 
 The `_tags` attribute will be used to build up the url. It contains all elements that should be appended before the filename.
@@ -299,7 +305,7 @@ Your code to generate the anchor would look something like this:
         
         foreach(array_reverse($parents) as $parent) {
             foreach ($parent->getElementsByTagName('a') as $child) {
-                if ($child->tagName === 'a' && $child->getAttribute('id')) {
+                if ($child->getAttribute('id')) {
                     $anchor = '#' . $child->getAttribute('id');
                 }   
             }
@@ -326,13 +332,13 @@ At last, you append the anchor to the `link` variable:
 
 ### Putting it al together
 With all the data available that you need, all that is left is to put it together.
-To do this, loop over the parents and get the `textContent` for every element.
+To do this, loop over the parents and get the `textContent` for every element, and place it in an array.
 Merge this array with an array containing the `score`, `link` and `_tags` attributes.
 
 ```php
 <?php
 
-    $indices = [];
+    $records = [];
     foreach($bodyContents as $element) {
             
         $data = [];
@@ -340,19 +346,19 @@ Merge this array with an array containing the `score`, `link` and `_tags` attrib
             $data[$parent] = $element->textContent;
         }
         
-        $indices[] = array_merge($data, [
+        $records[] = array_merge($data, [
             '_tags'      => $tags,
             'link'       => $link,
             'importance' => $score,
         ]);
     }
     
-    return $indices;
+    return $records;
     
 ```
 
 ## Done!
-Congratulations, you've finished building the structure for your indices!
+Congratulations, you've finished building the structure for your records!
 The final code will look something like this:
 ```php
 $content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
@@ -362,7 +368,7 @@ $content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
     
     $priorityOrder = ['h1', 'h2', 'h3', 'h4', 'p'];
     $scores = ['h1' => 0, 'h2' => 1, 'h3' => 2, 'h4' => 3];
-    $indices = [];
+    $records = [];
     $parents = [];
 
     foreach($bodyElements as $element) {
@@ -417,14 +423,14 @@ $content = \file_get_contents(__DIR__ . '/docs/1-algolia-and-scout.html');
             $data[$parent] = $element->textContent;
         }
 
-        $indices[] = array_merge($data, [
+        $records[] = array_merge($data, [
             '_tags'      => $tags,
             'link'       => $link,
             'importance' => $score,
         ]);
     }
 
-    return $indices;
+    return $records;
 ```
 
 
